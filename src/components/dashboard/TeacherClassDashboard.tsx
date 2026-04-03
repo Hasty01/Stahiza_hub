@@ -1,77 +1,46 @@
-import React, { useState, useEffect } from 'react';
-import { Users, UserPlus, MessageSquare, ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Users, UserPlus, MessageSquare, ShieldCheck, GraduationCap, ArrowRight } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
 import { StudentApprovalList, PendingStudent } from './StudentApprovalList';
 import { ClassChat } from './ClassChat';
 import { useAuth } from '@/src/context/AuthContext';
-import { supabaseService, UserProfile } from '@/src/lib/supabaseService';
 
 export const TeacherClassDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'approvals' | 'chat' | 'students'>('overview');
-  const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([]);
-  const [approvedStudents, setApprovedStudents] = useState<UserProfile[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [pendingStudents, setPendingStudents] = useState<PendingStudent[]>([
+    { id: '1', name: 'Alice Smith', email: 'alice@stahiza.com', classGroup: user?.classGroup || 'S1', requestDate: '2 hours ago' },
+    { id: '2', name: 'Bob Johnson', email: 'bob@stahiza.com', classGroup: user?.classGroup || 'S1', requestDate: '5 hours ago' },
+    { id: '3', name: 'Charlie Brown', email: 'charlie@stahiza.com', classGroup: user?.classGroup || 'S1', requestDate: '1 day ago' },
+  ]);
 
-  const fetchData = async () => {
-    if (!user?.classGroup) return;
-    try {
-      setLoading(true);
-      const allUsers = await supabaseService.getUsers();
-      const classUsers = allUsers.filter(u => u.classGroup === user.classGroup && u.role === 'student');
-      
-      const pending = classUsers
-        .filter(u => !u.isApproved)
-        .map(u => ({
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          classGroup: u.classGroup || '',
-          requestDate: new Date(u.created_at).toLocaleDateString()
-        }));
-      
-      const approved = classUsers.filter(u => u.isApproved);
-      
-      setPendingStudents(pending);
-      setApprovedStudents(approved);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
+  const [approvedStudents, setApprovedStudents] = useState([
+    { id: '101', name: 'David Miller', email: 'david@stahiza.com', joinDate: '2 weeks ago', performance: '92%' },
+    { id: '102', name: 'Emma Wilson', email: 'emma@stahiza.com', joinDate: '1 month ago', performance: '88%' },
+    { id: '103', name: 'Frank Wright', email: 'frank@stahiza.com', joinDate: '3 days ago', performance: '75%' },
+    { id: '104', name: 'Grace Lee', email: 'grace@stahiza.com', joinDate: '1 week ago', performance: '95%' },
+  ]);
+
+  const handleApprove = (id: string) => {
+    const student = pendingStudents.find(s => s.id === id);
+    if (student) {
+      setApprovedStudents([
+        ...approvedStudents, 
+        { id: student.id, name: student.name, email: student.email, joinDate: 'Just now', performance: '-' }
+      ]);
     }
+    setPendingStudents(pendingStudents.filter(s => s.id !== id));
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [user?.classGroup]);
-
-  const handleApprove = async (id: string) => {
-    try {
-      await supabaseService.approveUser(id, true);
-      await fetchData();
-    } catch (error) {
-      console.error('Error approving student:', error);
-    }
-  };
-
-  const handleReject = async (id: string) => {
-    // For now, we just remove them from the list locally or we could have a delete method
-    setPendingStudents(prev => prev.filter(s => s.id !== id));
+  const handleReject = (id: string) => {
+    setPendingStudents(pendingStudents.filter(s => s.id !== id));
   };
 
   const stats = [
     { label: 'Approved Students', value: approvedStudents.length.toString(), icon: Users, color: 'text-navy', bg: 'bg-navy/10' },
     { label: 'Pending Requests', value: pendingStudents.length.toString(), icon: UserPlus, color: 'text-gold', bg: 'bg-gold/10' },
-    { label: 'Class Group', value: user?.classGroup || 'N/A', icon: MessageSquare, color: 'text-maroon', bg: 'bg-maroon/10' },
+    { label: 'Unread Messages', value: '12', icon: MessageSquare, color: 'text-maroon', bg: 'bg-maroon/10' },
   ];
-
-  if (loading) {
-    return (
-      <div className="flex justify-center py-24">
-        <Loader2 className="h-12 w-12 animate-spin text-navy" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-8">
@@ -153,6 +122,7 @@ export const TeacherClassDashboard = () => {
                         <p className="text-[10px] text-muted-foreground">{student.email}</p>
                       </div>
                     </div>
+                    <span className="text-xs font-black text-navy">{student.performance}</span>
                   </div>
                 ))}
               </div>
@@ -210,7 +180,11 @@ export const TeacherClassDashboard = () => {
                   <div className="flex items-center gap-8">
                     <div className="text-right">
                       <p className="text-[10px] text-muted-foreground uppercase font-black">Joined</p>
-                      <p className="text-sm font-bold text-foreground">{new Date((student as any).created_at).toLocaleDateString()}</p>
+                      <p className="text-sm font-bold text-foreground">{student.joinDate}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-muted-foreground uppercase font-black">Performance</p>
+                      <p className="text-sm font-black text-navy">{student.performance}</p>
                     </div>
                   </div>
                 </div>

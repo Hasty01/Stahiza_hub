@@ -1,54 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { useAuth, UserRole } from '@/src/context/AuthContext';
+import { useAuth, UserRole, ClassGroup } from '@/src/context/AuthContext';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [classGroup, setClassGroup] = useState<ClassGroup>('S1');
   const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Get role from query param (optional now, but kept for UI context)
+  // Get role from query param
   const queryParams = new URLSearchParams(location.search);
   const roleParam = queryParams.get('role') as UserRole;
   
+  // If no role is selected, redirect to role selection
   useEffect(() => {
-    if (user) {
-      navigate(`/${user.role}`);
+    if (!roleParam) {
+      navigate('/role-selection');
     }
-  }, [user, navigate]);
+  }, [roleParam, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setIsSubmitting(true);
     
-    try {
-      const success = await login(email, password);
-      if (!success) {
-        setError('Invalid email or password. Please try again.');
-      }
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during login.');
-    } finally {
-      setIsSubmitting(false);
+    const success = login(roleParam, password, classGroup);
+    
+    if (success) {
+      navigate(`/${roleParam}`);
+    } else {
+      setError('Invalid password for this role. (Hint: role123)');
     }
   };
 
-  const roleTitle = roleParam ? roleParam.charAt(0).toUpperCase() + roleParam.slice(1) : 'Portal';
+  const roleTitle = roleParam ? roleParam.charAt(0).toUpperCase() + roleParam.slice(1) : '';
+  const classes: ClassGroup[] = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
 
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h1 className="text-3xl font-black text-foreground">Login to <span className="text-gold">{roleTitle}</span></h1>
-        <p className="text-sm text-muted-foreground font-medium">Enter your credentials to continue</p>
+        <h1 className="text-3xl font-black text-foreground">Login as <span className="text-gold">{roleTitle}</span></h1>
+        <p className="text-sm text-muted-foreground font-medium">Enter your role-specific password to continue</p>
       </div>
 
       {error && (
@@ -58,43 +55,40 @@ export const LoginPage = () => {
         </div>
       )}
 
-      {isMock && (
-        <div className="rounded-lg bg-gold/10 p-4 border border-gold/20 space-y-2">
-          <p className="text-xs font-bold text-gold uppercase tracking-wider">Demo Mode Active</p>
-          <p className="text-sm text-foreground/80">
-            Backend not connected. Use these credentials to explore:
-          </p>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="bg-card-bg p-2 rounded border border-border/50">
-              <p className="text-muted-foreground">Admin:</p>
-              <p className="font-mono font-bold">admin@stahiza.com</p>
-            </div>
-            <div className="bg-card-bg p-2 rounded border border-border/50">
-              <p className="text-muted-foreground">Teacher:</p>
-              <p className="font-mono font-bold">teacher@stahiza.com</p>
-            </div>
-            <div className="bg-card-bg p-2 rounded border border-border/50 col-span-2">
-              <p className="text-muted-foreground">Student:</p>
-              <p className="font-mono font-bold">student@stahiza.com</p>
-            </div>
-          </div>
-          <p className="text-[10px] text-muted-foreground italic">Any password will work.</p>
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1">
-          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Email Address</label>
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Portal Email</label>
           <Input 
             type="email" 
-            placeholder="name@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required 
-            autoFocus
-            className="bg-card-bg border-border"
+            value={`${roleParam}@stahiza.com`} 
+            disabled 
+            className="bg-muted/50 border-border opacity-70"
           />
         </div>
+
+        {(roleParam === 'student' || roleParam === 'teacher') && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+              {roleParam === 'teacher' ? 'Class You Teach' : 'Your Class'}
+            </label>
+            <div className="grid grid-cols-6 gap-2">
+              {classes.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setClassGroup(c)}
+                  className={`py-2 text-xs font-bold rounded-lg border transition-all ${
+                    classGroup === c 
+                      ? 'bg-gold text-black border-gold' 
+                      : 'bg-card-bg text-muted-foreground border-border hover:border-gold'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-1">
           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Password</label>
@@ -104,21 +98,15 @@ export const LoginPage = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required 
+            autoFocus
           />
         </div>
-        <Button 
-          type="submit" 
-          className="w-full h-12 text-lg font-bold" 
-          variant="navy"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Sign In to Portal'}
-        </Button>
+        <Button type="submit" className="w-full h-12 text-lg font-bold" variant="navy">Sign In to Portal</Button>
       </form>
 
       <div className="text-center text-sm font-medium space-y-2">
         <div>
-          Need to change portal?{' '}
+          Wrong portal?{' '}
           <Link to="/role-selection" className="font-bold text-gold hover:underline">Change Role</Link>
         </div>
         <div className="text-muted-foreground pt-2 border-t border-border/50">

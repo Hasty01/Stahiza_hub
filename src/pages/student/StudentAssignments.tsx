@@ -1,38 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
-import { BookOpen, Calendar, Clock, Filter, Search, ArrowRight, CheckCircle2, FileText, Loader2 } from 'lucide-react';
+import { BookOpen, Calendar, Clock, Filter, Search, ArrowRight, CheckCircle2, AlertCircle, FileText } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
-import { supabaseService, Assignment } from '@/src/lib/supabaseService';
-import { useAuth } from '@/src/context/AuthContext';
 
 export const StudentAssignments = () => {
-  const { user } = useAuth();
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      if (user?.classGroup) {
-        try {
-          const data = await supabaseService.getAssignments(user.classGroup);
-          setAssignments(data);
-        } catch (error) {
-          console.error('Error fetching assignments:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchAssignments();
-  }, [user]);
-
-  const filteredAssignments = assignments.filter(a => 
-    a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    a.type.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const assignments = [
+    { id: 1, title: 'Physics: Newton\'s Laws', subject: 'Physics', due: 'Oct 20', status: 'Pending', priority: 'High', description: 'Complete the problem set on page 45 of your textbook.' },
+    { id: 2, title: 'History: World War II', subject: 'History', due: 'Oct 22', status: 'Submitted', priority: 'Medium', description: 'Write a 500-word essay on the causes of the war.' },
+    { id: 3, title: 'Math: Calculus Basics', subject: 'Mathematics', due: 'Oct 25', status: 'Pending', priority: 'High', description: 'Solve the integration problems in the shared worksheet.' },
+    { id: 4, title: 'English: Essay Writing', subject: 'English', due: 'Oct 28', status: 'Graded', priority: 'Low', score: '95/100', description: 'Submit your final draft of the creative writing piece.' },
+  ];
 
   const container = {
     hidden: { opacity: 0 },
@@ -71,8 +50,6 @@ export const StudentAssignments = () => {
             <input 
               type="text" 
               placeholder="Search assignments..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
               className="h-12 pl-11 pr-6 rounded-2xl bg-card-bg border border-border focus:border-gold outline-none transition-all w-64 text-sm font-medium"
             />
           </div>
@@ -83,119 +60,106 @@ export const StudentAssignments = () => {
         </motion.div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-12 w-12 animate-spin text-navy" />
-        </div>
-      ) : (
-        <>
-          <motion.div 
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-          >
-            {filteredAssignments.map((assignment) => {
-              const submission = assignment.studentSubmissions?.find(s => s.studentId === user?.id);
-              const status = submission ? (submission.grade ? 'Graded' : 'Submitted') : 'Pending';
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+      >
+        {assignments.map((assignment) => (
+          <motion.div key={assignment.id} variants={item}>
+            <Card className="group relative overflow-hidden h-full flex flex-col border-2 hover:border-gold/50 transition-all shadow-sm hover:shadow-xl hover:shadow-gold/5 rounded-[2.5rem]">
+              <div className={cn(
+                "absolute top-0 left-0 h-1.5 w-full",
+                assignment.priority === 'High' ? 'bg-maroon' : assignment.priority === 'Medium' ? 'bg-navy dark:bg-gold' : 'bg-gold/50'
+              )} />
               
-              return (
-                <motion.div key={assignment.id} variants={item}>
-                  <Card className="group relative overflow-hidden h-full flex flex-col border-2 hover:border-gold/50 transition-all shadow-sm hover:shadow-xl hover:shadow-gold/5 rounded-[2.5rem]">
-                    <div className={cn(
-                      "absolute top-0 left-0 h-1.5 w-full",
-                      assignment.type === 'quiz' ? 'bg-maroon' : assignment.type === 'project' ? 'bg-navy dark:bg-gold' : 'bg-gold/50'
-                    )} />
-                    
-                    <div className="p-8 flex flex-col h-full space-y-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
-                            <BookOpen className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{assignment.type}</span>
-                        </div>
-                        <span className={cn(
-                          "rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm",
-                          status === 'Pending' ? 'bg-gold/10 text-gold' : 
-                          status === 'Submitted' ? 'bg-navy/10 text-navy dark:text-gold' : 'bg-green-500/10 text-green-500'
-                        )}>
-                          {status}
-                        </span>
-                      </div>
-
-                      <div className="space-y-2 flex-1">
-                        <h3 className="text-xl font-black text-foreground group-hover:text-navy dark:group-hover:text-gold transition-colors leading-tight">
-                          {assignment.title}
-                        </h3>
-                        <p className="text-sm text-muted-foreground font-medium line-clamp-2">
-                          {assignment.description}
-                        </p>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="flex items-center gap-6 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-gold" />
-                            {assignment.dueDate}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-gold" />
-                            11:59 PM
-                          </div>
-                        </div>
-
-                        {status === 'Graded' && (
-                          <div className="p-4 bg-green-500/5 rounded-2xl border border-green-500/10 flex items-center justify-between">
-                            <span className="text-xs font-black text-green-500 uppercase tracking-widest">Final Grade</span>
-                            <span className="text-lg font-black text-green-500">{submission?.grade}</span>
-                          </div>
-                        )}
-
-                        <div className="pt-2">
-                          <Button 
-                            variant={status === 'Pending' ? 'navy' : 'outline'} 
-                            className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] group/btn"
-                          >
-                            {status === 'Pending' ? (
-                              <>
-                                Start Assignment
-                                <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
-                              </>
-                            ) : (
-                              <>
-                                View Details
-                                <FileText className="ml-2 h-4 w-4" />
-                              </>
-                            )}
-                          </Button>
-                        </div>
-                      </div>
+              <div className="p-8 flex flex-col h-full space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center">
+                      <BookOpen className="h-4 w-4 text-muted-foreground" />
                     </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">{assignment.subject}</span>
+                  </div>
+                  <span className={cn(
+                    "rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest shadow-sm",
+                    assignment.status === 'Pending' ? 'bg-gold/10 text-gold' : 
+                    assignment.status === 'Submitted' ? 'bg-navy/10 text-navy dark:text-gold' : 'bg-green-500/10 text-green-500'
+                  )}>
+                    {assignment.status}
+                  </span>
+                </div>
 
-          {filteredAssignments.length === 0 && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="py-20 flex flex-col items-center justify-center text-center space-y-6"
-            >
-              <div className="h-32 w-32 bg-muted rounded-[3rem] flex items-center justify-center">
-                <CheckCircle2 className="h-16 w-16 text-muted-foreground" />
+                <div className="space-y-2 flex-1">
+                  <h3 className="text-xl font-black text-foreground group-hover:text-navy dark:group-hover:text-gold transition-colors leading-tight">
+                    {assignment.title}
+                  </h3>
+                  <p className="text-sm text-muted-foreground font-medium line-clamp-2">
+                    {assignment.description}
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-6 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-gold" />
+                      {assignment.due}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-gold" />
+                      11:59 PM
+                    </div>
+                  </div>
+
+                  {assignment.status === 'Graded' && (
+                    <div className="p-4 bg-green-500/5 rounded-2xl border border-green-500/10 flex items-center justify-between">
+                      <span className="text-xs font-black text-green-500 uppercase tracking-widest">Final Grade</span>
+                      <span className="text-lg font-black text-green-500">{assignment.score}</span>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <Button 
+                      variant={assignment.status === 'Pending' ? 'navy' : 'outline'} 
+                      className="w-full h-12 rounded-xl font-black uppercase tracking-widest text-[10px] group/btn"
+                    >
+                      {assignment.status === 'Pending' ? (
+                        <>
+                          Start Assignment
+                          <ArrowRight className="ml-2 h-4 w-4 group-hover/btn:translate-x-1 transition-transform" />
+                        </>
+                      ) : (
+                        <>
+                          View Details
+                          <FileText className="ml-2 h-4 w-4" />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <h3 className="text-2xl font-black text-foreground">All Caught Up!</h3>
-                <p className="text-muted-foreground font-medium max-w-xs">
-                  You have no pending assignments at the moment. Enjoy your free time!
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </>
+            </Card>
+          </motion.div>
+        ))}
+      </motion.div>
+
+      {assignments.length === 0 && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="py-20 flex flex-col items-center justify-center text-center space-y-6"
+        >
+          <div className="h-32 w-32 bg-muted rounded-[3rem] flex items-center justify-center">
+            <CheckCircle2 className="h-16 w-16 text-muted-foreground" />
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-2xl font-black text-foreground">All Caught Up!</h3>
+            <p className="text-muted-foreground font-medium max-w-xs">
+              You have no pending assignments at the moment. Enjoy your free time!
+            </p>
+          </div>
+        </motion.div>
       )}
     </div>
   );

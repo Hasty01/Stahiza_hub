@@ -1,10 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, MessageSquare, ShieldCheck, MoreVertical, Paperclip, Smile, Loader2 } from 'lucide-react';
+import { Send, User, MessageSquare, ShieldCheck, MoreVertical, Paperclip, Smile } from 'lucide-react';
 import { Button } from '@/src/components/ui/Button';
+import { Input } from '@/src/components/ui/Input';
 import { useAuth } from '@/src/context/AuthContext';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
-import { supabaseService, ChatMessage } from '@/src/lib/supabaseService';
+
+interface Message {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderRole: string;
+  text: string;
+  timestamp: string;
+  isTeacher?: boolean;
+}
 
 interface ClassChatProps {
   classGroup: string;
@@ -12,36 +22,27 @@ interface ClassChatProps {
 
 export const ClassChat = ({ classGroup }: ClassChatProps) => {
   const { user } = useAuth();
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [newMessage, setNewMessage] = useState('');
-  const [loading, setLoading] = useState(true);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  const fetchMessages = async () => {
-    try {
-      const data = await supabaseService.getChatMessages(classGroup);
-      setMessages(data);
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoading(false);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      senderId: 'teacher-1',
+      senderName: 'Mr. Johnson',
+      senderRole: 'teacher',
+      text: `Welcome to the ${classGroup} class group! Feel free to ask questions here.`,
+      timestamp: '10:00 AM',
+      isTeacher: true
+    },
+    {
+      id: '2',
+      senderId: 'student-1',
+      senderName: 'Alice Smith',
+      senderRole: 'student',
+      text: 'Hello Mr. Johnson! Excited for the new term.',
+      timestamp: '10:05 AM'
     }
-  };
-
-  useEffect(() => {
-    fetchMessages();
-
-    // Set up real-time subscription
-    const subscription = supabaseService.subscribeToChat(classGroup, (payload) => {
-      if (payload.eventType === 'INSERT') {
-        setMessages(prev => [...prev, payload.new as ChatMessage]);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [classGroup]);
+  ]);
+  const [newMessage, setNewMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -51,24 +52,22 @@ export const ClassChat = ({ classGroup }: ClassChatProps) => {
     scrollToBottom();
   }, [messages]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
+  const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !user) return;
 
-    try {
-      await supabaseService.sendChatMessage({
-        channel_id: classGroup,
-        sender_id: user.id,
-        sender_name: user.name,
-        sender_role: user.role,
-        text: newMessage,
-        class_group: classGroup,
-        is_teacher: user.role === 'teacher'
-      });
-      setNewMessage('');
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
+    const message: Message = {
+      id: Date.now().toString(),
+      senderId: user.id,
+      senderName: user.name,
+      senderRole: user.role,
+      text: newMessage,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isTeacher: user.role === 'teacher'
+    };
+
+    setMessages([...messages, message]);
+    setNewMessage('');
   };
 
   return (
@@ -99,59 +98,51 @@ export const ClassChat = ({ classGroup }: ClassChatProps) => {
 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto p-8 space-y-8 scrollbar-thin">
-        {loading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-navy" />
-          </div>
-        ) : (
-          <AnimatePresence initial={false}>
-            {messages.map((msg) => {
-              const isOwn = msg.sender_id === user?.id;
-              return (
-                <motion.div 
-                  key={msg.id} 
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.3 }}
-                  className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
-                >
-                  <div className={`flex items-center gap-3 mb-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
-                    <div className="h-8 w-8 rounded-xl bg-muted overflow-hidden border border-border">
-                      <img 
-                        src={`https://ui-avatars.com/api/?name=${msg.sender_name}&background=random`} 
-                        alt={msg.sender_name} 
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
-                    <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-foreground">{msg.sender_name}</span>
-                        {msg.is_teacher && (
-                          <span className="px-2 py-0.5 bg-maroon text-white text-[8px] font-black rounded-full uppercase tracking-widest shadow-sm">
-                            Teacher
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
-                        {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
+        <AnimatePresence initial={false}>
+          {messages.map((msg) => {
+            const isOwn = msg.senderId === user?.id;
+            return (
+              <motion.div 
+                key={msg.id} 
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.3 }}
+                className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}
+              >
+                <div className={`flex items-center gap-3 mb-2 ${isOwn ? 'flex-row-reverse' : 'flex-row'}`}>
+                  <div className="h-8 w-8 rounded-xl bg-muted overflow-hidden border border-border">
+                    <img 
+                      src={`https://ui-avatars.com/api/?name=${msg.senderName}&background=random`} 
+                      alt={msg.senderName} 
+                      className="h-full w-full object-cover"
+                    />
                   </div>
-                  <motion.div 
-                    whileHover={{ scale: 1.01 }}
-                    className={`max-w-[85%] rounded-3xl px-6 py-4 text-sm font-medium shadow-md transition-all ${
-                      isOwn 
-                        ? 'bg-navy text-white rounded-tr-none shadow-navy/20' 
-                        : 'bg-muted text-foreground rounded-tl-none shadow-black/5'
-                    }`}
-                  >
-                    {msg.text}
-                  </motion.div>
+                  <div className={`flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-foreground">{msg.senderName}</span>
+                      {msg.isTeacher && (
+                        <span className="px-2 py-0.5 bg-maroon text-white text-[8px] font-black rounded-full uppercase tracking-widest shadow-sm">
+                          Teacher
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">{msg.timestamp}</span>
+                  </div>
+                </div>
+                <motion.div 
+                  whileHover={{ scale: 1.01 }}
+                  className={`max-w-[85%] rounded-3xl px-6 py-4 text-sm font-medium shadow-md transition-all ${
+                    isOwn 
+                      ? 'bg-navy text-white rounded-tr-none shadow-navy/20' 
+                      : 'bg-muted text-foreground rounded-tl-none shadow-black/5'
+                  }`}
+                >
+                  {msg.text}
                 </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        )}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
         <div ref={chatEndRef} />
       </div>
 

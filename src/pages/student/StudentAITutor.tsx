@@ -5,8 +5,6 @@ import { Input } from '@/src/components/ui/Input';
 import { GraduationCap, Send, Sparkles, Bot, Lightbulb, BookOpen, RotateCcw, User, Zap, Brain, MessageSquare, Info, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '@/src/lib/utils';
-import { GoogleGenAI } from "@google/genai";
-import ReactMarkdown from 'react-markdown';
 
 export const StudentAITutor = () => {
   const [message, setMessage] = useState('');
@@ -37,45 +35,21 @@ export const StudentAITutor = () => {
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    setMessages([...messages, userMsg]);
     setMessage('');
     setIsTyping(true);
 
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: [
-          ...messages.map(m => ({
-            role: m.role === 'ai' ? 'model' : 'user',
-            parts: [{ text: m.text }]
-          })),
-          { role: 'user', parts: [{ text: message }] }
-        ],
-        config: {
-          systemInstruction: "You are a helpful, encouraging, and knowledgeable school tutor. Your goal is to help students understand complex concepts, solve problems step-by-step, and provide study tips. Use clear language and formatting (like markdown) to make your explanations easy to follow. If a student asks something inappropriate or unrelated to education, gently guide them back to their studies.",
-        },
-      });
-
+    // Simulate AI response
+    setTimeout(() => {
       const aiMsg = {
         id: messages.length + 2,
         role: 'ai',
-        text: response.text || "I'm sorry, I couldn't generate a response. Please try again.",
+        text: `That's a great question about "${userMsg.text}". In educational terms, we can look at this from several perspectives. Would you like me to explain the core concepts or provide some practice examples?`,
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages(prev => [...prev, aiMsg]);
-    } catch (error) {
-      console.error("Gemini API Error:", error);
-      const errorMsg = {
-        id: messages.length + 2,
-        role: 'ai',
-        text: "I'm having some trouble connecting right now. Please check your connection and try again.",
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      setMessages(prev => [...prev, errorMsg]);
-    } finally {
       setIsTyping(false);
-    }
+    }, 1500);
   };
 
   const suggestions = [
@@ -149,13 +123,7 @@ export const StudentAITutor = () => {
                           ? 'bg-navy text-white rounded-tr-none' 
                           : 'bg-white dark:bg-navy/10 border border-border rounded-tl-none text-foreground'
                       )}>
-                        {msg.role === 'ai' ? (
-                          <div className="prose prose-sm dark:prose-invert max-w-none">
-                            <ReactMarkdown>{msg.text}</ReactMarkdown>
-                          </div>
-                        ) : (
-                          msg.text
-                        )}
+                        {msg.text}
                       </div>
                       <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mt-2 px-2">{msg.time}</span>
                     </div>

@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/src/components/ui/Button';
 import { Input } from '@/src/components/ui/Input';
 import { useAuth, UserRole, ClassGroup } from '@/src/context/AuthContext';
-import { AlertCircle, Loader2 } from 'lucide-react';
 
 export const SignupPage = () => {
   const navigate = useNavigate();
@@ -15,22 +14,11 @@ export const SignupPage = () => {
     role: 'student' as UserRole,
     classGroup: 'S1' as ClassGroup
   });
-  const [error, setError] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setIsSubmitting(true);
-    
-    try {
-      await signup(formData.name, formData.email, formData.role, formData.classGroup, formData.password);
-      navigate(`/${formData.role}`);
-    } catch (err: any) {
-      setError(err.message || 'An error occurred during signup.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    signup(formData.name, formData.email, formData.role, formData.classGroup);
+    navigate(`/${formData.role}`);
   };
 
   const classes: ClassGroup[] = ['S1', 'S2', 'S3', 'S4', 'S5', 'S6'];
@@ -41,14 +29,6 @@ export const SignupPage = () => {
         <h1 className="text-2xl font-black text-foreground">Create an Account</h1>
         <p className="text-sm text-muted-foreground">Join STAHIZA HUB today</p>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-lg bg-maroon/10 p-3 text-sm font-bold text-maroon border border-maroon/20">
-          <AlertCircle className="h-4 w-4" />
-          {error}
-        </div>
-      )}
-
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input 
           label="Full Name" 
@@ -116,14 +96,7 @@ export const SignupPage = () => {
           value={formData.password}
           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
         />
-        <Button 
-          type="submit" 
-          className="w-full h-12 font-bold" 
-          variant="navy"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : 'Create Account'}
-        </Button>
+        <Button type="submit" className="w-full h-12 font-bold" variant="navy">Create Account</Button>
       </form>
       <div className="text-center text-sm font-medium">
         Already have an account?{' '}

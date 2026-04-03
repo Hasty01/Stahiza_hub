@@ -140,7 +140,7 @@ export const StudentDashboard = () => {
             title="Upcoming Work" 
             description="Your next 3 deadlines"
             footer={
-              <Button variant="ghost" className="w-full justify-between group text-navy dark:text-gold font-bold">
+              <Button variant="link" className="w-full justify-between group">
                 View all assignments
                 <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>

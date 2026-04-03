@@ -1,38 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card } from '@/src/components/ui/Card';
 import { Button } from '@/src/components/ui/Button';
-import { FileText, Play, Download, Search, Filter, Clock, User, ArrowRight, Video, File, Star, Loader2 } from 'lucide-react';
+import { FileText, Play, Download, ExternalLink, Search, Filter, Clock, User, ArrowRight, Video, File, Star } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '@/src/lib/utils';
-import { supabaseService, Resource } from '@/src/lib/supabaseService';
-import { useAuth } from '@/src/context/AuthContext';
 
 export const StudentResources = () => {
-  const { user } = useAuth();
-  const [resources, setResources] = useState<Resource[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  useEffect(() => {
-    const fetchResources = async () => {
-      if (user?.classGroup) {
-        try {
-          const data = await supabaseService.getResources(user.classGroup);
-          setResources(data);
-        } catch (error) {
-          console.error('Error fetching resources:', error);
-        } finally {
-          setLoading(false);
-        }
-      }
-    };
-    fetchResources();
-  }, [user]);
-
-  const filteredResources = resources.filter(r => 
-    r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (r.subject && r.subject.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const resources = [
+    { id: 1, title: 'Introduction to Quantum Physics', type: 'video', duration: '15:20', date: 'Oct 10', instructor: 'Dr. Smith', subject: 'Physics', thumbnail: 'https://picsum.photos/seed/physics/400/225' },
+    { id: 2, title: 'Algebraic Equations Cheat Sheet', type: 'pdf', size: '1.2 MB', date: 'Oct 12', instructor: 'Prof. Johnson', subject: 'Mathematics', thumbnail: 'https://picsum.photos/seed/math/400/225' },
+    { id: 3, title: 'World History: The Renaissance', type: 'video', duration: '45:00', date: 'Oct 14', instructor: 'Ms. Davis', subject: 'History', thumbnail: 'https://picsum.photos/seed/history/400/225' },
+    { id: 4, title: 'Organic Chemistry Lab Notes', type: 'pdf', size: '3.5 MB', date: 'Oct 15', instructor: 'Dr. Miller', subject: 'Chemistry', thumbnail: 'https://picsum.photos/seed/chemistry/400/225' },
+  ];
 
   const container = {
     hidden: { opacity: 0 },
@@ -71,8 +50,6 @@ export const StudentResources = () => {
             <input 
               type="text" 
               placeholder="Search resources..." 
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
               className="h-12 pl-11 pr-6 rounded-2xl bg-card-bg border border-border focus:border-gold outline-none transition-all w-64 text-sm font-medium"
             />
           </div>
@@ -83,89 +60,83 @@ export const StudentResources = () => {
         </motion.div>
       </div>
 
-      {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="h-12 w-12 animate-spin text-navy" />
-        </div>
-      ) : (
-        <motion.div 
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid gap-8 md:grid-cols-2"
-        >
-          {filteredResources.map((resource) => (
-            <motion.div key={resource.id} variants={item}>
-              <Card className="group overflow-hidden p-0 rounded-[2.5rem] border-2 hover:border-gold/50 transition-all shadow-sm hover:shadow-xl hover:shadow-gold/5 h-full">
-                <div className="flex flex-col sm:flex-row h-full">
-                  <div className="relative w-full sm:w-48 h-48 sm:h-auto overflow-hidden shrink-0">
-                    <img 
-                      src={`https://picsum.photos/seed/${resource.id}/400/225`} 
-                      alt={resource.title} 
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                      {resource.type === 'video' ? (
-                        <div className="h-12 w-12 rounded-full bg-gold flex items-center justify-center shadow-lg">
-                          <Play className="h-6 w-6 text-black fill-current" />
-                        </div>
-                      ) : (
-                        <div className="h-12 w-12 rounded-full bg-maroon flex items-center justify-center shadow-lg">
-                          <FileText className="h-6 w-6 text-white" />
-                        </div>
-                      )}
+      <motion.div 
+        variants={container}
+        initial="hidden"
+        animate="show"
+        className="grid gap-8 md:grid-cols-2"
+      >
+        {resources.map((resource) => (
+          <motion.div key={resource.id} variants={item}>
+            <Card className="group overflow-hidden p-0 rounded-[2.5rem] border-2 hover:border-gold/50 transition-all shadow-sm hover:shadow-xl hover:shadow-gold/5 h-full">
+              <div className="flex flex-col sm:flex-row h-full">
+                <div className="relative w-full sm:w-48 h-48 sm:h-auto overflow-hidden shrink-0">
+                  <img 
+                    src={resource.thumbnail} 
+                    alt={resource.title} 
+                    className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    {resource.type === 'video' ? (
+                      <div className="h-12 w-12 rounded-full bg-gold flex items-center justify-center shadow-lg">
+                        <Play className="h-6 w-6 text-black fill-current" />
+                      </div>
+                    ) : (
+                      <div className="h-12 w-12 rounded-full bg-maroon flex items-center justify-center shadow-lg">
+                        <FileText className="h-6 w-6 text-white" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="absolute top-4 left-4">
+                    <span className={cn(
+                      "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md",
+                      resource.type === 'video' ? "bg-navy/80 text-white" : "bg-maroon/80 text-white"
+                    )}>
+                      {resource.type}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col p-8 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <User className="h-3 w-3 text-gold" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{resource.instructor}</span>
                     </div>
-                    <div className="absolute top-4 left-4">
-                      <span className={cn(
-                        "px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest shadow-lg backdrop-blur-md",
-                        resource.type === 'video' ? "bg-navy/80 text-white" : "bg-maroon/80 text-white"
-                      )}>
-                        {resource.type}
-                      </span>
-                    </div>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{resource.date}</span>
                   </div>
 
-                  <div className="flex flex-1 flex-col p-8 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <User className="h-3 w-3 text-gold" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Instructor</span>
-                      </div>
-                      <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{new Date(resource.createdAt).toLocaleDateString()}</span>
-                    </div>
+                  <div className="space-y-1">
+                    <h3 className="text-xl font-black text-foreground group-hover:text-navy dark:group-hover:text-gold transition-colors line-clamp-2 leading-tight">
+                      {resource.title}
+                    </h3>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{resource.subject}</p>
+                  </div>
 
-                    <div className="space-y-1">
-                      <h3 className="text-xl font-black text-foreground group-hover:text-navy dark:group-hover:text-gold transition-colors line-clamp-2 leading-tight">
-                        {resource.title}
-                      </h3>
-                      <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{resource.subject || 'General'}</p>
+                  <div className="mt-auto pt-4 flex items-center justify-between border-t border-border">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                      {resource.type === 'video' ? (
+                        <><Clock className="h-3 w-3 text-gold" /> {resource.duration}</>
+                      ) : (
+                        <><File className="h-3 w-3 text-gold" /> {resource.size}</>
+                      )}
                     </div>
-
-                    <div className="mt-auto pt-4 flex items-center justify-between border-t border-border">
-                      <div className="flex items-center gap-2 text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                        {resource.type === 'video' ? (
-                          <><Clock className="h-3 w-3 text-gold" /> Video</>
-                        ) : (
-                          <><File className="h-3 w-3 text-gold" /> Document</>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-gold/10 hover:text-gold">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                        <Button variant="navy" size="sm" className="h-10 px-6 rounded-xl font-black uppercase tracking-widest text-[10px]">
-                          {resource.type === 'video' ? 'Watch' : 'Open'}
-                        </Button>
-                      </div>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-gold/10 hover:text-gold">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button variant="navy" size="sm" className="h-10 px-6 rounded-xl font-black uppercase tracking-widest text-[10px]">
+                        {resource.type === 'video' ? 'Watch' : 'Open'}
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </Card>
-            </motion.div>
-          ))}
-        </motion.div>
-      )}
+              </div>
+            </Card>
+          </motion.div>
+        ))}
+      </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: 30 }}

@@ -42,7 +42,6 @@ export const SocialFeed = () => {
       role: 'Student',
       avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=You',
       content: postText,
-      image: '',
       likes: 0,
       comments: 0,
       time: 'Just now',

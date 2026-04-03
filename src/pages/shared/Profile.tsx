@@ -131,28 +131,10 @@ export const Profile = () => {
                   placeholder="Doe"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input defaultValue={user?.email} disabled className="pl-10" />
-                </div>
-              </div>
+              <Input label="Email Address" defaultValue={user?.email} disabled icon={Mail} />
               <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Phone Number</label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input placeholder="+1 (555) 000-0000" className="pl-10" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Date of Birth</label>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input type="date" className="pl-10" />
-                  </div>
-                </div>
+                <Input label="Phone Number" placeholder="+1 (555) 000-0000" icon={Phone} />
+                <Input label="Date of Birth" type="date" icon={Calendar} />
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1 flex items-center gap-2">
