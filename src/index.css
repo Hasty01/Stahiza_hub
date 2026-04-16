@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #000000;
+  --color-navy: #000080;
+  --color-maroon: #800000;
+  --color-gold: #FFD700;
+  
+  --color-card-bg: #1A1A1A;
+  --color-sidebar-bg: #0F0F0F;
+  --color-navbar-bg: #141414;
+
+  /* Enhanced Theme Colors with High Contrast */
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-muted: #111827;
+  --color-muted-foreground: #9ca3af;
+  --color-border: #1f2937;
+
+  /* Animation Utilities */
+  --animate-in: in 0.3s ease-out;
+  --animate-out: out 0.3s ease-in;
+  --animate-fade-in: fade-in 0.5s ease-out;
+  --animate-slide-in: slide-in 0.4s ease-out;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slide-in {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground transition-colors duration-300 antialiased;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40 transition-colors;
+  }
+}
+
+@layer components {
+  .skeleton {
+    @apply animate-pulse bg-muted rounded-md;
+  }
+
+  .glass {
+    @apply bg-background/80 backdrop-blur-md border border-border;
+  }
+
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:shadow-navy/5 hover:-translate-y-1;
+  }
+
+  .btn-hover {
+    @apply transition-all duration-200 active:scale-95;
+  }
+}
+
+.dark {
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-muted: #111827;
+  --color-muted-foreground: #d1d5db;
+  --color-border: #374151;
+  --color-card-bg: #1A1A1A;
+  --color-sidebar-bg: #0F0F0F;
+  --color-navbar-bg: #141414;
+}
+
+.light {
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-muted: #f3f4f6;
+  --color-muted-foreground: #4b5563;
+  --color-border: #e5e7eb;
+  --color-card-bg: #ffffff;
+  --color-sidebar-bg: #f9fafb;
+  --color-navbar-bg: #ffffff;
+}
