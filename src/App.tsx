@@ -1,3 +1,21 @@
+import { useEffect } from "react";
+import { supabase } from "./supabaseClient";
+
+useEffect(() => {
+  const testConnection = async () => {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*');
+
+    console.log("✅ Supabase DATA:", data);
+    console.log("❌ Supabase ERROR:", error);
+  };
+
+  testConnection();
+}, []);
+
+
+
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
