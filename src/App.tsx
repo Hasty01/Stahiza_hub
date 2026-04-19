@@ -53,24 +53,6 @@ const RootRedirect = () => {
 
 function AppContent() {
   const { loading, error } = useAuth();
-
-  // === TEMPORARY SUPABASE CONNECTION TEST ===
-  useEffect(() => {
-    const testConnection = async () => {
-      console.log("🔄 Testing Supabase connection...");
-
-      const { data, error } = await supabase
-        .from('users')
-        .select('*');
-
-      console.log("✅ Supabase DATA:", data);
-      console.log("❌ Supabase ERROR:", error);
-    };
-
-    testConnection();
-  }, []);
-  // =========================================
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">

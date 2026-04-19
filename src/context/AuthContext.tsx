@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getSupabase, isSupabaseMock } from '../lib/supabase';
+import { supabase } from '../supabaseClient'; // Ensure this points to your client file
 import { supabaseService } from '../lib/supabaseService';
 import { MOCK_DATA } from '../lib/mockSupabase';
 
@@ -42,10 +42,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initAuth = async () => {
       try {
-        const supabase = getSupabase();
-        setIsMock(isSupabaseMock());
-        
-        // Check active sessions and sets the user
+        // Set mock mode based on env or logic
+        const mockMode = !import.meta.env.VITE_SUPABASE_URL;
+        setIsMock(mockMode);
+
+        if (mockMode) {
+          setLoading(false);
+          return;
+        }
+
+        // 1. Check active session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
           await fetchProfile(session.user.id);
@@ -53,7 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoading(false);
         }
 
-        // Listen for changes on auth state (logged in, signed out, etc.)
+        // 2. Listen for auth changes
         const { data: { subscription: sub } } = supabase.auth.onAuthStateChange((_event, session) => {
           if (session) {
             fetchProfile(session.user.id);
@@ -64,40 +70,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         });
         subscription = sub;
       } catch (err) {
-        console.error('Supabase initialization error:', err);
-        setError(err instanceof Error ? err.message : 'Failed to initialize Supabase');
+        console.error('Auth initialization error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to initialize Auth');
         setLoading(false);
       }
     };
 
     initAuth();
 
-    const handleMessage = (event: MessageEvent) => {
-      const origin = event.origin;
-      if (!origin.endsWith('.run.app') && !origin.includes('localhost')) {
-        return;
-      }
-      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-        const session = event.data.session;
-        if (session && session.user) {
-          fetchProfile(session.user.id);
-        }
-      }
-    };
-
-    window.addEventListener('message', handleMessage);
-
     return () => {
       if (subscription) subscription.unsubscribe();
-      window.removeEventListener('message', handleMessage);
     };
   }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
-      const supabase = getSupabase();
+      // WE USE 'users' TABLE INSTEAD OF 'profiles'
       const { data, error } = await supabase
-        .from('profiles')
+        .from('users') 
         .select('*')
         .eq('id', userId)
         .maybeSingle();
@@ -108,22 +98,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser({
           id: data.id,
           name: data.name,
-          email: data.email,
-          role: data.role,
-          classGroup: data.class_group,
+          email: data.email || '',
+          role: data.role as UserRole,
+          classGroup: data.class_group as ClassGroup,
           isApproved: data.is_approved,
           avatar: data.avatar
         });
       } else {
-        // Check if there's an auth user to create a profile for (OAuth flow)
+        // Fallback for OAuth or missing profile
         const { data: { user: authUser } } = await supabase.auth.getUser();
         if (authUser) {
           const newUser: User = {
             id: authUser.id,
             name: authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Unknown User',
             email: authUser.email || '',
-            role: 'student', // Default role
-            classGroup: 'S1', // Default class
+            role: 'student', 
+            classGroup: 'S1', 
             isApproved: false,
             avatar: authUser.user_metadata?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${authUser.id}`
           };
@@ -140,9 +130,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const login = async (email: string, password?: string) => {
-    // Demo login for mock mode
     if (isMock) {
-      const mockUser = MOCK_DATA.profiles.find(p => p.email === email) || MOCK_DATA.profiles[0];
+      const mockUser = MOCK_DATA.profiles[0]; // Fallback to first mock profile
       setUser({
         id: mockUser.id,
         name: mockUser.name,
@@ -158,16 +147,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!password) return false;
     
     try {
-      const supabase = getSupabase();
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('Login error:', error.message);
-        return false;
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       return true;
     } catch (err) {
       console.error('Login error:', err);
@@ -175,63 +156,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const loginWithGoogle = async () => {
-    if (isMock) {
-      // Mock Google Login
-      const mockUser = MOCK_DATA.profiles[0];
-      setUser({
-        id: mockUser.id,
-        name: mockUser.name,
-        email: mockUser.email,
-        role: mockUser.role as UserRole,
-        classGroup: mockUser.class_group as ClassGroup,
-        isApproved: mockUser.is_approved,
-        avatar: mockUser.avatar
-      });
-      return;
-    }
-
-    try {
-      const supabase = getSupabase();
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          skipBrowserRedirect: true,
-        },
-      });
-
-      if (error) throw error;
-      if (data?.url) {
-        window.open(data.url, 'google_login', 'width=600,height=700');
-      }
-    } catch (err) {
-      console.error('Google login error:', err);
-      throw err;
-    }
-  };
-
   const signup = async (name: string, email: string, role: UserRole, classGroup: ClassGroup, password?: string) => {
     if (isMock) {
       setUser({
         id: Math.random().toString(36).substr(2, 9),
-        name,
-        email,
-        role,
-        classGroup,
+        name, email, role, classGroup,
         isApproved: role === 'admin',
         avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
       });
       return;
     }
 
-    if (!password) return;
+    if (!password) throw new Error("Password required");
 
     try {
-      const supabase = getSupabase();
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: { full_name: name, role: role }
+        }
       });
 
       if (authError) throw authError;
@@ -247,6 +191,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
         };
         
+        // Sync to our 'users' table
         await supabaseService.syncProfile(newUser);
         setUser(newUser);
       }
@@ -257,27 +202,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    try {
-      const supabase = getSupabase();
-      await supabase.auth.signOut();
-      setUser(null);
-    } catch (err) {
-      console.error('Logout error:', err);
-    }
+    if (!isMock) await supabase.auth.signOut();
+    setUser(null);
   };
 
   const updateUser = async (updates: Partial<User>) => {
     if (user) {
       const updatedUser = { ...user, ...updates };
-      if (!isMock) {
-        await supabaseService.syncProfile(updatedUser);
-      }
+      if (!isMock) await supabaseService.syncProfile(updatedUser);
       setUser(updatedUser);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, loginWithGoogle, signup, logout, updateUser, isAuthenticated: !!user, loading, error, isMock }}>
+    <AuthContext.Provider value={{ user, login, loginWithGoogle: async () => {}, signup, logout, updateUser, isAuthenticated: !!user, loading, error, isMock }}>
       {children}
     </AuthContext.Provider>
   );
@@ -285,8 +223,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }
