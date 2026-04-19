@@ -1,21 +1,6 @@
 import { useEffect } from "react";
 import { supabase } from "./supabaseClient";
 
-useEffect(() => {
-  const testConnection = async () => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*');
-
-    console.log("✅ Supabase DATA:", data);
-    console.log("❌ Supabase ERROR:", error);
-  };
-
-  testConnection();
-}, []);
-
-
-
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -69,6 +54,23 @@ const RootRedirect = () => {
 function AppContent() {
   const { loading, error } = useAuth();
 
+  // === TEMPORARY SUPABASE CONNECTION TEST ===
+  useEffect(() => {
+    const testConnection = async () => {
+      console.log("🔄 Testing Supabase connection...");
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('*');
+
+      console.log("✅ Supabase DATA:", data);
+      console.log("❌ Supabase ERROR:", error);
+    };
+
+    testConnection();
+  }, []);
+  // =========================================
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -93,9 +95,6 @@ function AppContent() {
             <p>VITE_SUPABASE_URL</p>
             <p>VITE_SUPABASE_ANON_KEY</p>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Please add these variables to the <strong>Secrets</strong> panel in the AI Studio UI to connect your backend.
-          </p>
         </div>
       </div>
     );
